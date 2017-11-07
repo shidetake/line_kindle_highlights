@@ -68,7 +68,7 @@ class LineKindleHighlights
       all('.highlight').each do |element|
         unless @highlights.include?(element.text)
           # 新しいハイライトをLINEに送信する
-          push_highlight(element.text)
+          push_highlight('> ' + element.text)
           @highlights << element.text 
         end
       end
