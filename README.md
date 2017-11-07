@@ -6,4 +6,4 @@ KindleのハイライトをLINE通知するスクリプト
 - 1度送信したハイライトは送信しないため、最新のハイライトだけを取得できる
 
 ## 使い方
-[説明記事](http://shidetake.com/misc/line_highlights_1/)参照のこと
+[説明記事](http://shidetake.com/line_highlights_1/)参照のこと
