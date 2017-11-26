@@ -16,11 +16,11 @@ class LineKindleHighlights
   POLTERGEIST = 1
 
   JSON_FILE_NAME = 'highlights.json'
-  CRAWL_PAGE_NUM = 2
+  BOOK_NUM = 3
 
   def initialize(driver)
     # capybaraの設定
-    Capybara.app_host = 'https://kindle.amazon.co.jp'
+    Capybara.app_host = 'https://read.amazon.co.jp/notebook'
     Capybara.default_max_wait_time = 5
     case driver
     when SELENIUM
@@ -57,24 +57,21 @@ class LineKindleHighlights
     login
     print "ok.\n"
 
-    print "go to highlights..."
-    go_to_highlights
-    print "ok.\n"
+    all('.kp-notebook-library-each-book').each.with_index do |book, i|
+      # 次の本に移動
+      puts book.text
+      book.click
+      sleep 5
 
-    CRAWL_PAGE_NUM.times do
-      all('.title').each do |element|
-        p element.text
-      end
-
-      all('.highlight').each do |element|
+      all('.kp-notebook-highlight').each do |element|
         unless @highlights.include?(element.text)
           # 新しいハイライトをLINEに送信する
           push_highlight('> ' + element.text)
-          @highlights << element.text 
+          @highlights << element.text
         end
       end
 
-      next_page
+      break if i == BOOK_NUM - 1
     end
 
     print "logout\n"
@@ -99,9 +96,8 @@ class LineKindleHighlights
     visit('')
 
     # ログイン済みの場合は抜ける
-    return unless page.title.include?('Welcome')
+    return if page.title.include?('メモとハイライト')
 
-    click_link 'sign in'
     fill_in 'ap_email',
       :with => KINDLE_EMAIL
     fill_in 'password',
@@ -109,17 +105,6 @@ class LineKindleHighlights
     click_on 'signInSubmit'
   end
 
-  # Your Hightlightsのページに遷移する
-  # @note ログイン直後のページで使う
-  def go_to_highlights
-    click_link 'Your Highlights'
-  end
-
-  # 次のページに遷移
-  # @note Your Hightlightsのページで使うことで次の本のハイライトページに遷移する
-  def next_page
-    visit(find_by_id('nextBookLink', visible: false)[:href])
-  end
 
   # 外部ファイルから既に取得しているハイライトを読み出す
   def restore_highlights
