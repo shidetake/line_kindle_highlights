@@ -6,6 +6,7 @@ require 'selenium-webdriver'
 require 'line/bot'
 require 'json'
 require 'socket'
+require 'optparse'
 require_relative 'user_info'
 
 class LineKindleHighlights
@@ -148,24 +149,36 @@ class LineKindleHighlights
   end
 end
 
-gs = TCPServer.open(12345)
-addr = gs.addr
-addr.shift
-printf("server is on %s\n", addr.join(":"))
+params = ARGV.getopts('', 'debug')
 
-crawler = LineKindleHighlights.new(LineKindleHighlights::POLTERGEIST)
+unless params['debug']
+  gs = TCPServer.open(12345)
+  addr = gs.addr
+  addr.shift
+  printf("server is on %s\n", addr.join(":"))
 
-loop do
-  s = gs.accept
-  print(s, " is accepted\n")
+  crawler = LineKindleHighlights.new(LineKindleHighlights::POLTERGEIST)
 
+  loop do
+    s = gs.accept
+    print(s, " is accepted\n")
+
+    begin
+      crawler.scrape
+    rescue
+      print crawler.dump
+      raise
+    end
+
+    print(s, " is gone\n")
+    s.close
+  end
+else
+  crawler = LineKindleHighlights.new(LineKindleHighlights::SELENIUM)
   begin
     crawler.scrape
   rescue
     print crawler.dump
     raise
   end
-
-  print(s, " is gone\n")
-  s.close
 end
