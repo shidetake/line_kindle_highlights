@@ -9,13 +9,14 @@ require 'socket'
 require 'optparse'
 require_relative 'user_info'
 
+# KindleのハイライトをLINE通知する
 class LineKindleHighlights
   include Capybara::DSL
 
   SELENIUM = 0
   POLTERGEIST = 1
 
-  JSON_FILE_NAME = 'highlights.json'
+  JSON_FILE_NAME = 'highlights.json'.freeze
   BOOK_NUM = 3
 
   def initialize(driver)
@@ -27,16 +28,16 @@ class LineKindleHighlights
       Capybara.current_driver = :selenium
       Capybara.javascript_driver = :selenium
       Capybara.register_driver :selenium do |app|
-        Capybara::Selenium::Driver.new(app, :browser => :chrome)
+        Capybara::Selenium::Driver.new(app, browser: :chrome)
       end
     when POLTERGEIST
       Capybara.current_driver = :poltergeist
       Capybara.javascript_driver = :poltergeist
       Capybara.register_driver :poltergeist do |app|
         # 最新のSeleniumではFirefoxが動作しない問題があるのでchromeを使う
-        Capybara::Poltergeist::Driver.new(app, {:timeout => 120, js_errors: false})
+        Capybara::Poltergeist::Driver.new(app, timeout: 120, js_errors: false)
       end
-      page.driver.headers = {'User-Agent' => 'Mac Safari'}
+      page.driver.headers = { 'User-Agent' => 'Mac Safari' }
     end
 
     # lineの設定
@@ -53,7 +54,7 @@ class LineKindleHighlights
 
   # ハイライトをウェブから取得してLINE送信する
   def scrape
-    print "login..."
+    print 'login...'
     login
     print "ok.\n"
 
@@ -66,11 +67,11 @@ class LineKindleHighlights
       sleep 5
 
       all('.kp-notebook-highlight').each do |element|
-        unless @highlights.include?(element.text)
-          # 新しいハイライトをLINEに送信する
-          push_highlight('> ' + element.text)
-          @highlights << element.text
-        end
+        next if @highlights.include?(element.text)
+
+        # 新しいハイライトをLINEに送信する
+        push_highlight('> ' + element.text)
+        @highlights << element.text
       end
 
       break if i == BOOK_NUM - 1
@@ -78,9 +79,9 @@ class LineKindleHighlights
 
     print "logout\n"
 
-    #print JSON.pretty_generate(@highlights)
+    # print JSON.pretty_generate(@highlights)
 
-    print "save highlights..."
+    print 'save highlights...'
     store_highlights
     print "ok.\n"
   end
@@ -100,13 +101,10 @@ class LineKindleHighlights
     # ログイン済みの場合は抜ける
     return if page.title.include?('メモとハイライト')
 
-    fill_in 'ap_email',
-      :with => KINDLE_EMAIL
-    fill_in 'password',
-      :with => KINDLE_PASSWORD
+    fill_in 'ap_email', with: KINDLE_EMAIL
+    fill_in 'password', with: KINDLE_PASSWORD
     click_on 'signInSubmit'
   end
-
 
   # 外部ファイルから既に取得しているハイライトを読み出す
   def restore_highlights
@@ -138,11 +136,19 @@ end
 
 params = ARGV.getopts('', 'debug')
 
-unless params['debug']
-  gs = TCPServer.open(12345)
+if params['debug']
+  crawler = LineKindleHighlights.new(LineKindleHighlights::SELENIUM)
+  begin
+    crawler.scrape
+  rescue
+    print crawler.dump
+    raise
+  end
+else
+  gs = TCPServer.open(12_345)
   addr = gs.addr
   addr.shift
-  printf("server is on %s\n", addr.join(":"))
+  printf("server is on %s\n", addr.join(':'))
 
   crawler = LineKindleHighlights.new(LineKindleHighlights::POLTERGEIST)
 
@@ -159,13 +165,5 @@ unless params['debug']
 
     print(s, " is gone\n")
     s.close
-  end
-else
-  crawler = LineKindleHighlights.new(LineKindleHighlights::SELENIUM)
-  begin
-    crawler.scrape
-  rescue
-    print crawler.dump
-    raise
   end
 end
