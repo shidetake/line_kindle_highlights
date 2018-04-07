@@ -57,6 +57,8 @@ class LineKindleHighlights
     login
     print "ok.\n"
 
+    sleep 5
+
     all('.kp-notebook-library-each-book').each.with_index do |book, i|
       # 次の本に移動
       puts book.text
