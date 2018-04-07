@@ -140,30 +140,30 @@ if params['debug']
   crawler = LineKindleHighlights.new(LineKindleHighlights::SELENIUM)
   begin
     crawler.scrape
+    exit
   rescue
     print crawler.dump
     raise
   end
-else
-  gs = TCPServer.open(12_345)
-  addr = gs.addr
-  addr.shift
-  printf("server is on %s\n", addr.join(':'))
+end
 
-  crawler = LineKindleHighlights.new(LineKindleHighlights::POLTERGEIST)
+gs = TCPServer.open(12_345)
+addr = gs.addr
+addr.shift
+printf("server is on %s\n", addr.join(':'))
 
-  loop do
-    s = gs.accept
-    print(s, " is accepted\n")
+crawler = LineKindleHighlights.new(LineKindleHighlights::POLTERGEIST)
+loop do
+  s = gs.accept
+  print(s, " is accepted\n")
 
-    begin
-      crawler.scrape
-    rescue
-      print crawler.dump
-      raise
-    end
-
-    print(s, " is gone\n")
-    s.close
+  begin
+    crawler.scrape
+  rescue
+    print crawler.dump
+    raise
   end
+
+  print(s, " is gone\n")
+  s.close
 end
