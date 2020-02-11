@@ -14,7 +14,7 @@ class LineKindleHighlights
   include Capybara::DSL
 
   SELENIUM = 0
-  POLTERGEIST = 1
+  HEADLESS_CHROME = 1
 
   JSON_FILE_NAME = 'highlights.json'.freeze
   BOOK_NUM = 3
@@ -30,14 +30,23 @@ class LineKindleHighlights
       Capybara.register_driver :selenium do |app|
         Capybara::Selenium::Driver.new(app, browser: :chrome)
       end
-    when POLTERGEIST
-      Capybara.current_driver = :poltergeist
-      Capybara.javascript_driver = :poltergeist
-      Capybara.register_driver :poltergeist do |app|
-        # 最新のSeleniumではFirefoxが動作しない問題があるのでchromeを使う
-        Capybara::Poltergeist::Driver.new(app, timeout: 120, js_errors: false)
+
+    when HEADLESS_CHROME
+      Capybara.current_driver = :selenium
+      Capybara.javascript_driver = :selenium
+
+      capabilities = Selenium::WebDriver::Remote::Capabilities.chrome(
+        chromeOptions: { args: %w(headless disable-gpu) }
+        # chromeOptions: { args: %w() }
+      )
+
+      Capybara.register_driver :selenium do |app|
+        Capybara::Selenium::Driver.new(
+          app,
+          browser: :chrome,
+          desired_capabilities: capabilities
+        )
       end
-      page.driver.headers = { 'User-Agent' => 'Mac Safari' }
     end
 
     # lineの設定
@@ -58,7 +67,10 @@ class LineKindleHighlights
     login
     print "ok.\n"
 
-    sleep 5
+    sleep 10
+    dump
+
+    p all('.kp-notebook-library-each-book')
 
     all('.kp-notebook-library-each-book').each.with_index do |book, i|
       # 次の本に移動
@@ -97,6 +109,8 @@ class LineKindleHighlights
   # Kindleのマイページにアクセスしログインする
   def login
     visit('')
+
+    sleep 5
 
     # ログイン済みの場合は抜ける
     return if page.title.include?('メモとハイライト')
@@ -137,6 +151,7 @@ end
 params = ARGV.getopts('', 'debug')
 
 if params['debug']
+  #crawler = LineKindleHighlights.new(LineKindleHighlights::HEADLESS_CHROME)
   crawler = LineKindleHighlights.new(LineKindleHighlights::SELENIUM)
   begin
     crawler.scrape
@@ -152,7 +167,7 @@ addr = gs.addr
 addr.shift
 printf("server is on %s\n", addr.join(':'))
 
-crawler = LineKindleHighlights.new(LineKindleHighlights::POLTERGEIST)
+crawler = LineKindleHighlights.new(LineKindleHighlights::HEADLESS_CHROME)
 loop do
   s = gs.accept
   print(s, " is accepted\n")
